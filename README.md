@@ -58,6 +58,26 @@ Created with:
 - Spring Boot DevTools
 - Package: `com.nextcart.backend`
 - Artifact: `nextcart-backend`
+- PostgreSQL with Flyway database migrations
+
+### PostgreSQL setup
+
+Create a local PostgreSQL database named `nextCart` in pgAdmin. The backend reads
+the connection settings from environment variables:
+
+```powershell
+$env:DB_URL="jdbc:postgresql://localhost:5432/nextCart"
+$env:DB_USERNAME="postgres"
+$env:DB_PASSWORD="<your-local-password>"
+```
+
+`DB_URL` and `DB_USERNAME` have local defaults in
+`backend/src/main/resources/application.properties`; the password is intentionally
+not stored in the repository.
+
+Flyway applies migrations from
+`backend/src/main/resources/db/migration` when the backend starts. The initial
+`V1__create_products_table.sql` migration creates the products table.
 
 Run the backend with Maven:
 
