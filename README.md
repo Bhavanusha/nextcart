@@ -79,6 +79,20 @@ Flyway applies migrations from
 `backend/src/main/resources/db/migration` when the backend starts. The initial
 `V1__create_products_table.sql` migration creates the products table.
 
+Authentication endpoints are available under `/api/auth`:
+
+```text
+POST /api/auth/register
+POST /api/auth/login
+POST /api/auth/forgot-password
+POST /api/auth/reset-password
+```
+
+The frontend authentication pages are available at `/login`, `/register`,
+`/forgot-password`, and `/reset-password`. Password reset email delivery is not
+configured yet; the backend creates a short-lived reset token for the future
+email integration.
+
 Run the backend with Maven:
 
 ```powershell
