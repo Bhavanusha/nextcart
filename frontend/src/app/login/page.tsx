@@ -16,8 +16,10 @@ export default function LoginPage() {
     setSubmitting(true);
     setError("");
     try {
-      await submitAuthRequest("/login", { email, password });
-      router.push("/");
+      const response = await submitAuthRequest<{ role: string }>("/login", { email, password });
+      const back = new URLSearchParams(window.location.search).get("returnTo");
+      const target = back && /^\/admin(?:\/|\?|$)/.test(back) && !back.includes("\\") ? back : "/admin";
+      router.push(response.role === "ADMIN" ? target : "/");
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to sign in.");
     } finally {

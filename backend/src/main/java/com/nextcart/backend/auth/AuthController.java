@@ -48,6 +48,12 @@ public class AuthController {
         return new MessageResponse("Your password has been reset successfully.");
     }
 
+    @PostMapping("/logout")
+    public MessageResponse logout(HttpSession session) {
+        session.invalidate();
+        return new MessageResponse("Signed out successfully.");
+    }
+
     public record RegisterRequest(
             @NotBlank @Size(max = 100) String firstName,
             @NotBlank @Size(max = 100) String lastName,
