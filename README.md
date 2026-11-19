@@ -118,3 +118,37 @@ The backend currently starts with the generated Spring Boot application class. N
 ## Scope rule
 
 NextCart is a single electronics shop. The project must not introduce seller accounts, vendor management, marketplace commissions, or other multi-vendor concepts.
+
+
+
+## Customer storefront
+
+Open the customer storefront at `/` and the administration console at `/admin`.
+The shop uses published products, categories, stock, variants and reviews from PostgreSQL.
+Customers sign in to save items, manage their bag and addresses, and review their orders.
+
+In **Admin → Settings**, use the **Storefront** tab to update homepage copy and imagery.
+Use **Shipping** to configure the rate, free-shipping threshold, and optional delivery window.
+The newsletter form saves subscriptions to PostgreSQL.
+
+### PayHere checkout
+
+Keep these values in the Spring Boot process environment or your deployment secret store.
+
+| Variable | Purpose |
+| --- | --- |
+| `PAYHERE_MERCHANT_ID` | Merchant ID for the selected PayHere environment |
+| `PAYHERE_MERCHANT_SECRET` | Merchant Secret for the approved storefront domain |
+| `PAYHERE_RETURN_BASE_URL` | Storefront origin for the order confirmation page |
+| `PAYHERE_NOTIFY_URL` | Public backend URL ending in `/api/store/payhere/notify` |
+| `PAYHERE_SANDBOX` | Defaults to `true`. Set to `false` for production credentials |
+
+Set `NEXT_PUBLIC_API_URL` when the frontend API origin differs from `http://localhost:8080`.
+Set the backend `nextcart.store.origin` property (or `NEXTCART_STORE_ORIGIN`) when the customer frontend uses an origin other than `http://localhost:3000`.
+Keep browser authentication on the same site so the session survives the checkout return.
+
+PayHere is available for configured LKR and USD stores. Prices, shipping, taxes, discounts,
+and inventory are validated on the server. The hosted PayHere page collects payment details.
+The confirmation page reads the verified callback status from the database.
+For a callback test, use the PayHere sandbox with a publicly reachable notification URL.
+Cash on delivery is available when enabled under **Admin → Settings → Payment**.

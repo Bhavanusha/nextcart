@@ -1,4 +1,3 @@
-
 package com.nextcart.backend.admin;
 
 import jakarta.servlet.http.HttpSession;
@@ -63,8 +62,8 @@ public class ProductAdminController {
     @GetMapping("/{id}/variants")
     public List<Variant> variants(@PathVariable long id, HttpSession session) {
         get(id, session);
-        return jdbc.query("SELECT color, size, sku_override, price FROM product_variants WHERE product_id = ? ORDER BY id",
-                (rs, row) -> new Variant(rs.getString(1), rs.getString(2), rs.getString(3), rs.getBigDecimal(4)), id);
+        return jdbc.query("SELECT color, size, sku_override, price, id FROM product_variants WHERE product_id = ? ORDER BY id",
+                (rs, row) -> new Variant(rs.getString(1), rs.getString(2), rs.getString(3), rs.getBigDecimal(4), rs.getLong(5)), id);
     }
 
     @PostMapping
@@ -147,13 +146,27 @@ public class ProductAdminController {
     }
 
     private void saveVariants(long id, List<Variant> variants) {
-        jdbc.update("DELETE FROM product_variants WHERE product_id = ?", id);
-        for (Variant variant : variants) {
-            if (variant.color() == null && variant.size() == null && variant.skuOverride() == null && variant.price() == null) {
-                continue;
+        List<Long> oldIds = jdbc.queryForList("SELECT id FROM product_variants WHERE product_id = ?", Long.class, id);
+        var cleaned = variants.stream().filter(v -> v.color() != null || v.size() != null
+                || v.skuOverride() != null || v.price() != null).toList();
+        List<Long> retained = cleaned.stream().map(Variant::id).filter(java.util.Objects::nonNull).toList();
+        if (!oldIds.containsAll(retained) || retained.stream().distinct().count() != retained.size()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Choose valid product variants.");
+        }
+        for (long old : oldIds) {
+            if (!retained.contains(old)) jdbc.update("DELETE FROM product_variants WHERE id = ?", old);
+        }
+        if (!retained.isEmpty()) {
+            jdbc.update("UPDATE product_variants SET sku_override = NULL WHERE product_id = ?", id);
+        }
+        for (Variant variant : cleaned) {
+            if (variant.id() != null) {
+                jdbc.update("UPDATE product_variants SET color = ?, size = ?, sku_override = ?, price = ? WHERE id = ?",
+                        variant.color(), variant.size(), variant.skuOverride(), variant.price(), variant.id());
+            } else {
+                jdbc.update("INSERT INTO product_variants(product_id, color, size, sku_override, price) VALUES (?, ?, ?, ?, ?)",
+                        id, variant.color(), variant.size(), variant.skuOverride(), variant.price());
             }
-            jdbc.update("INSERT INTO product_variants (product_id, color, size, sku_override, price) VALUES (?, ?, ?, ?, ?)",
-                    id, variant.color(), variant.size(), variant.skuOverride(), variant.price());
         }
     }
 
@@ -247,7 +260,7 @@ public class ProductAdminController {
     private record Stock(int quantity, int reserved) {}
 
     public record Variant(@Size(max = 100) String color, @Size(max = 100) String size,
-            @Size(max = 100) String skuOverride, @DecimalMin("0") @Digits(integer = 10, fraction = 2) BigDecimal price) {}
+            @Size(max = 100) String skuOverride, @DecimalMin("0") @Digits(integer = 10, fraction = 2) BigDecimal price, Long id) {}
 
     public record GalleryImage(Long id, String source) {}
 

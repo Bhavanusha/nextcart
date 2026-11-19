@@ -1,14 +1,19 @@
-
 "use client";
 
 import { useState, type FormEvent } from "react";
 import { adminRequest, Message, Panel, readImage, Thumb, useAdminData } from "../ui";
 
-type Preferences = { flatRate: number | null; freeShippingMinimum: number | null; cashOnDelivery: boolean; orderAlerts: boolean; lowStockAlerts: boolean };
+type Preferences = { flatRate: number | null; freeShippingMinimum: number | null; cashOnDelivery: boolean; orderAlerts: boolean; lowStockAlerts: boolean; deliveryMinDays: number | null; deliveryMaxDays: number | null };
 type Settings = { storeName: string; contactEmail: string; contactPhone: string | null; addressLine1: string | null; addressLine2: string | null;
   city: string | null; stateOrProvince: string | null; postalCode: string | null; country: string | null; currencyCode: string;
-  taxRate: number; timezone: string; logoUrl: string | null; preferences: Preferences };
-const tabs = ["Store Settings", "Shipping", "Payment", "Notifications"] as const;
+  taxRate: number; timezone: string; logoUrl: string | null; preferences: Preferences; storefront: Record<string, string> };
+const tabs = ["Store Settings", "Shipping", "Payment", "Notifications", "Storefront"] as const;
+const storefrontFields = [
+  ["announcement", "Announcement", 160], ["heroTitle", "Hero Title", 120], ["heroAccent", "Hero Accent", 120],
+  ["heroDescription", "Hero Description", 500], ["heroImage", "Hero Image URL", 2048],
+  ["storyTitle", "Story Title", 120], ["storyDescription", "Story Description", 500], ["storyImage", "Story Image URL", 2048],
+  ["campaignTitle", "Campaign Title", 120], ["campaignDescription", "Campaign Description", 500], ["campaignImage", "Campaign Image URL", 2048],
+] as const;
 const currencies = { USD: "USD ($)", LKR: "LKR (Rs)", INR: "INR (₹)", EUR: "EUR (€)", GBP: "GBP (£)", CAD: "CAD ($)", AUD: "AUD ($)" };
 const timezones = { "America/Los_Angeles": "Pacific Time", "America/Denver": "Mountain Time", "America/Chicago": "Central Time",
   "America/New_York": "Eastern Time", UTC: "UTC", "Europe/London": "London", "Asia/Colombo": "Sri Lanka", "Asia/Kolkata": "India" };
@@ -101,10 +106,20 @@ function SettingsEditor({ initial }: { initial: Settings }) {
             onChange={event => setPreference("flatRate", event.target.value === "" ? null : Number(event.target.value))} /></label>
           <label>Free Shipping Minimum ({form.currencyCode})<input type="number" min="0" max="9999999999.99" step=".01" value={form.preferences.freeShippingMinimum ?? ""}
             onChange={event => setPreference("freeShippingMinimum", event.target.value === "" ? null : Number(event.target.value))} /></label>
+          <label>Earliest Delivery (days)<input type="number" min="0" max="365" value={form.preferences.deliveryMinDays ?? ""}
+            onChange={event => setPreference("deliveryMinDays", event.target.value === "" ? null : Number(event.target.value))} /></label>
+          <label>Latest Delivery (days)<input type="number" min="0" max="365" value={form.preferences.deliveryMaxDays ?? ""}
+            onChange={event => setPreference("deliveryMaxDays", event.target.value === "" ? null : Number(event.target.value))} /></label>
         </div></Panel>}
         {tab === "Payment" && <Panel title="Payment Settings"><div className="admin-fields">
           <label>Tax Rate (%)<input required type="number" min="0" max="100" step=".01" value={form.taxRate} onChange={event => update("taxRate", Number(event.target.value))} /></label>
           <label className="inline-field"><input type="checkbox" checked={form.preferences.cashOnDelivery} onChange={event => setPreference("cashOnDelivery", event.target.checked)} /> Enable cash on delivery</label>
+        </div></Panel>}
+        {tab === "Storefront" && <Panel title="Storefront Content"><div className="admin-fields">
+          {storefrontFields.map(([field, label, length]) => <label key={field}>{label}
+            <input value={form.storefront?.[field] ?? ""} maxLength={length}
+              onChange={event => update("storefront", { ...form.storefront, [field]: event.target.value })} />
+          </label>)}
         </div></Panel>}
         {tab === "Notifications" && <Panel title="Admin Notifications"><div className="admin-fields">
           <label className="inline-field"><input type="checkbox" checked={form.preferences.orderAlerts} onChange={event => setPreference("orderAlerts", event.target.checked)} /> Pending order alerts</label>

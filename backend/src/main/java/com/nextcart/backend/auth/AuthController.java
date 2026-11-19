@@ -1,6 +1,7 @@
 package com.nextcart.backend.auth;
 
 import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -15,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
+@CrossOrigin(origins = "${nextcart.store.origin:http://localhost:3000}", allowCredentials = "true")
 public class AuthController {
 
     private final AuthService authService;
@@ -30,8 +31,10 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public AuthResponse login(@Valid @RequestBody LoginRequest request, HttpSession session) {
+    public AuthResponse login(@Valid @RequestBody LoginRequest request, HttpServletRequest servletRequest) {
         AuthResponse response = authService.login(request);
+        HttpSession session = servletRequest.getSession();
+        servletRequest.changeSessionId();
         session.setAttribute("userId", response.userId());
         return response;
     }

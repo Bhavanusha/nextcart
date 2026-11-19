@@ -1,5 +1,6 @@
 package com.nextcart.backend.admin;
 
+import com.nextcart.backend.store.OrderStock;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -79,9 +80,27 @@ public class OrderAdminController {
         if (!ORDER_STATUSES.contains(status)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid order status.");
         }
-        OrderState previous = jdbcTemplate.query("SELECT order_status, tracking_number FROM orders WHERE id = ? FOR UPDATE",
-                rs -> rs.next() ? new OrderState(rs.getString(1), rs.getString(2)) : null, id);
+        OrderState previous = jdbcTemplate.query("""
+                SELECT o.order_status, o.tracking_number, o.payment_status, o.checkout_key IS NOT NULL, o.coupon_id,
+                    EXISTS (SELECT 1 FROM payments p WHERE p.order_id = o.id AND p.payment_provider = 'PayHere')
+                FROM orders o WHERE o.id = ? FOR UPDATE
+                """, rs -> rs.next() ? new OrderState(rs.getString(1), rs.getString(2), rs.getString(3),
+                rs.getBoolean(4), rs.getObject(5, Long.class), rs.getBoolean(6)) : null, id);
         if (previous == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found.");
+        if (previous.storefront() && !previous.status().equals(status)) {
+            if ("CANCELLED".equals(previous.status())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "A cancelled storefront order cannot be reopened.");
+            }
+            if (previous.payHere() && "PENDING".equals(previous.paymentStatus())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Wait for PayHere to confirm or decline this payment.");
+            }
+            if ("CANCELLED".equals(status)) {
+                if (List.of("SHIPPED", "DELIVERED").contains(previous.status()) || "PAID".equals(previous.paymentStatus())) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Handle the return or refund before cancelling this order.");
+                }
+                OrderStock.restore(jdbcTemplate, id, previous.couponId());
+            }
+        }
         String tracking = request.trackingNumber() == null || request.trackingNumber().isBlank()
                 ? null : request.trackingNumber().trim();
         boolean trackingChanged = tracking != null && !tracking.equals(previous.trackingNumber());
@@ -125,7 +144,8 @@ public class OrderAdminController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Administrator access is required.");
     }
 
-    private record OrderState(String status, String trackingNumber) {}
+    private record OrderState(String status, String trackingNumber, String paymentStatus,
+            boolean storefront, Long couponId, boolean payHere) {}
 
     public record StatusRequest(@NotBlank String status, @Size(max = 255) String trackingNumber) {
     }

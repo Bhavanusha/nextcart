@@ -1,4 +1,3 @@
-
 "use client";
 
 import Icon from "../../Icon";
@@ -12,7 +11,7 @@ type Summary = {
   orderNumber: string; userId: number; firstName: string; lastName: string; email: string; phone: string | null;
   recipientName: string; shippingPhone: string; addressLine1: string; addressLine2: string | null; city: string;
   postalCode: string; stateOrProvince: string | null; country: string; subtotal: number; discountAmount: number;
-  shippingAmount: number; totalAmount: number; currencyCode: string; orderStatus: string; paymentStatus: string;
+  shippingAmount: number; taxAmount: number; totalAmount: number; currencyCode: string; orderStatus: string; paymentStatus: string;
   createdAt: string; placedAt: string | null; trackingNumber: string | null;
 };
 type Detail = {
@@ -101,6 +100,7 @@ function OrderView({ id, detail, refresh }: { id: string; detail: Detail; refres
         <dl className="order-totals"><dt className="muted-text">Subtotal</dt><dd>{money(order.subtotal, order.currencyCode)}</dd>
           <dt className="muted-text">Shipping</dt><dd>{money(order.shippingAmount, order.currencyCode)}</dd>
           <dt className="muted-text">Discount</dt><dd>−{money(order.discountAmount, order.currencyCode)}</dd>
+          {order.taxAmount > 0 && <><dt className="muted-text">Tax</dt><dd>{money(order.taxAmount, order.currencyCode)}</dd></>}
           <dt><strong>Total Amount</strong></dt><dd><strong className="accent-text">{money(order.totalAmount, order.currencyCode)}</strong></dd></dl>
       </Panel>
       <Panel title="Order Timeline"><ol className="order-timeline">{timeline.map((event, index) => <li key={event.at + "-" + index}>

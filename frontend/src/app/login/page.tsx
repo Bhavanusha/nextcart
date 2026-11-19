@@ -18,8 +18,13 @@ export default function LoginPage() {
     try {
       const response = await submitAuthRequest<{ role: string }>("/login", { email, password });
       const back = new URLSearchParams(window.location.search).get("returnTo");
-      const target = back && /^\/admin(?:\/|\?|$)/.test(back) && !back.includes("\\") ? back : "/admin";
-      router.push(response.role === "ADMIN" ? target : "/");
+      let path = "";
+      if (back?.startsWith("/") && !back.startsWith("//") && !back.includes("\\")) {
+        const url = new URL(back, window.location.origin);
+        if (url.origin === window.location.origin && !["/login", "/register"].includes(url.pathname)) path = url.pathname + url.search;
+      }
+      const isAdmin = path === "/admin" || path.startsWith("/admin/") || path.startsWith("/admin?");
+      router.push(response.role === "ADMIN" ? (isAdmin ? path : "/admin") : (!isAdmin && path ? path : "/"));
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to sign in.");
     } finally {

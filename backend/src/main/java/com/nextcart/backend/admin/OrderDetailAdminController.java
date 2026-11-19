@@ -38,7 +38,7 @@ public class OrderDetailAdminController {
                                                        o.shipping_recipient_name, o.shipping_phone, o.shipping_address_line1,
                                                        o.shipping_address_line2, o.shipping_city, o.shipping_postal_code, o.shipping_country,
                                                        o.shipping_state_or_province, o.tracking_number,
-                                                       o.subtotal, o.discount_amount, o.shipping_amount, o.total_amount, o.currency_code,
+                                                       o.subtotal, o.discount_amount, o.shipping_amount, o.tax_amount, o.total_amount, o.currency_code,
                                                        o.order_status, o.payment_status, o.created_at, o.placed_at
                                                 FROM orders o JOIN users u ON u.id = o.user_id WHERE o.id = ?
                                                 """,
@@ -56,7 +56,7 @@ public class OrderDetailAdminController {
                                                 result.getString("shipping_country"),
                                                 result.getBigDecimal("subtotal"),
                                                 result.getBigDecimal("discount_amount"),
-                                                result.getBigDecimal("shipping_amount"),
+                                                result.getBigDecimal("shipping_amount"), result.getBigDecimal("tax_amount"),
                                                 result.getBigDecimal("total_amount"), result.getString("currency_code"),
                                                 result.getString("order_status"),
                                                 result.getString("payment_status"),
@@ -146,7 +146,7 @@ public class OrderDetailAdminController {
         public record OrderSummary(long id, String orderNumber, long userId, String firstName, String lastName,
                         String email, String phone, String recipientName, String shippingPhone, String addressLine1,
                         String addressLine2, String city, String postalCode, String country, BigDecimal subtotal,
-                        BigDecimal discountAmount, BigDecimal shippingAmount, BigDecimal totalAmount,
+                        BigDecimal discountAmount, BigDecimal shippingAmount, BigDecimal taxAmount, BigDecimal totalAmount,
                         String currencyCode, String orderStatus, String paymentStatus, OffsetDateTime createdAt,
                         OffsetDateTime placedAt, String stateOrProvince, String trackingNumber) {
         }
