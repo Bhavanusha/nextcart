@@ -1,4 +1,3 @@
-
 "use client";
 
 import Icon from "../Icon";
@@ -8,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import { adminRequest, Heading, Message, Panel, readImage, Thumb, titleCase, useAdminData } from "../ui";
 
-type Variant = { color: string; size: string; skuOverride: string; price: string };
+type Variant = { id?: number; color: string; size: string; skuOverride: string; price: string };
 type Gallery = { id?: number; source: string };
 type Product = {
   name: string; description: string | null; sku: string; slug: string; brandName: string | null; categoryId: number | null;
@@ -44,7 +43,7 @@ function NewProduct({ categories }: { categories: Category[] }) {
 
 function ExistingProduct({ id, categories }: { id: string; categories: Category[] }) {
   const product = useAdminData<Product>("/products/" + id);
-  const variants = useAdminData<{ color: string | null; size: string | null; skuOverride: string | null; price: number | null }[]>("/products/" + id + "/variants");
+  const variants = useAdminData<{ id: number; color: string | null; size: string | null; skuOverride: string | null; price: number | null }[]>("/products/" + id + "/variants");
   const photos = useAdminData<{ id: number; imageUrl: string; primary: boolean }[]>("/products/" + id + "/images");
   const error = product.error || variants.error || photos.error;
   if (error) return <main className="admin-content"><Message error={error} /></main>;
@@ -53,7 +52,7 @@ function ExistingProduct({ id, categories }: { id: string; categories: Category[
   const initial = { ...p, description: p.description ?? "", brandName: p.brandName ?? "", categoryId: p.categoryId?.toString() ?? "",
     price: String(p.price), compareAtPrice: p.compareAtPrice?.toString() ?? "", stockQuantity: String(p.stockQuantity), metaTitle: p.metaTitle ?? "" };
   return <Editor id={id} categories={categories} initial={initial} reserved={p.reservedQuantity}
-    initialVariants={variants.data.map(row => ({ color: row.color ?? "", size: row.size ?? "", skuOverride: row.skuOverride ?? "", price: row.price?.toString() ?? "" }))}
+    initialVariants={variants.data.map(row => ({ id: row.id, color: row.color ?? "", size: row.size ?? "", skuOverride: row.skuOverride ?? "", price: row.price?.toString() ?? "" }))}
     initialGallery={[...photos.data].sort((a, b) => Number(b.primary) - Number(a.primary)).map(row => ({ id: row.id, source: row.imageUrl }))} />;
 }
 
@@ -84,7 +83,7 @@ function Editor({ id, categories, initial, initialVariants = [], initialGallery 
           expectedStockQuantity: id ? Number(initial.stockQuantity) : undefined,
           categoryId: form.categoryId ? Number(form.categoryId) : null, price: Number(form.price),
           compareAtPrice: form.compareAtPrice === "" ? null : Number(form.compareAtPrice), stockQuantity: Number(form.stockQuantity),
-          variants: variants.map(row => ({ color: row.color.trim() || null, size: row.size.trim() || null,
+          variants: variants.map(row => ({ id: row.id, color: row.color.trim() || null, size: row.size.trim() || null,
             skuOverride: row.skuOverride.trim() || null, price: row.price === "" ? null : Number(row.price) })),
           gallery: gallery.map(image => image.id ? { id: image.id } : { source: image.source }),
         }),
@@ -155,7 +154,7 @@ function Editor({ id, categories, initial, initialVariants = [], initialGallery 
       </div></Panel>
       <section className="admin-panel"><div className="spread"><h2>Variants</h2><button className="admin-link" type="button" disabled={variants.length >= 100} onClick={() => setVariants(current => [...current, emptyVariant])}>+ Add Variant</button></div>
         <div className="variants-scroll admin-fields"><div className="variant-grid">{Object.values(variantLabels).map(label => <span key={label}>{label}</span>)}</div>
-          {variants.map((row, index) => <div className="variant-grid" key={index}>{(Object.keys(variantLabels) as (keyof Variant)[]).map(key =>
+          {variants.map((row, index) => <div className="variant-grid" key={index}>{(Object.keys(variantLabels) as (keyof typeof variantLabels)[]).map(key =>
             <input key={key} aria-label={variantLabels[key] + " for variant " + (index + 1)} maxLength={100}
               type={key === "price" ? "number" : "text"} min={key === "price" ? "0" : undefined} step={key === "price" ? ".01" : undefined}
               value={row[key]} onChange={event => setVariants(current => current.map((variant, position) => position === index ? { ...variant, [key]: event.target.value } : variant))} />)}
